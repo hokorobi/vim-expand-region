@@ -12,7 +12,7 @@ set cpo&vim
 " ==============================================================================
 
 " Init global vars
-function! expand_region#init()
+function! expand_region#init() abort
   if exists('g:expand_region_init') && g:expand_region_init
     return
   endif
@@ -44,11 +44,11 @@ call expand_region#init()
 " ==============================================================================
 
 " Allow user to customize the global dictionary, or the per file type dictionary
-function! expand_region#custom_text_objects(...)
+function! expand_region#custom_text_objects(...) abort
   if a:0 == 1
     call extend(g:expand_region_text_objects, a:1)
   elseif a:0 == 2
-    if !exists("g:expand_region_text_objects_".a:1)
+    if !exists('g:expand_region_text_objects_'.a:1)
       let g:expand_region_text_objects_{a:1} = {}
       call extend(g:expand_region_text_objects_{a:1}, g:expand_region_text_objects)
     endif
@@ -58,12 +58,12 @@ endfunction
 
 " Returns whether we should perform the region highlighting use visual mode or
 " select mode
-function! expand_region#use_select_mode()
+function! expand_region#use_select_mode() abort
   return g:expand_region_use_select_mode || index(split(s:saved_selectmode, ','), 'cmd') != -1
 endfunction
 
 " Main function
-function! expand_region#next(mode, direction)
+function! expand_region#next(mode, direction) abort
   call s:expand_region(a:mode, a:direction)
 endfunction
 
@@ -99,21 +99,21 @@ let s:saved_selectmode = &selectmode
 " ==============================================================================
 
 " Sort the text object by length in ascending order
-function! s:sort_text_object(l, r)
+function! s:sort_text_object(l, r) abort
   return a:l.length - a:r.length
 endfunction
 
 " Compare two position arrays. Each input is the result of getpos(). Return a
 " negative value if lhs occurs before rhs, positive value if after, and 0 if
 " they are the same.
-function! s:compare_pos(l, r)
+function! s:compare_pos(l, r) abort
   " If number lines are the same, compare columns
   return a:l[1] ==# a:r[1] ? a:l[2] - a:r[2] : a:l[1] - a:r[1]
 endfunction
 
 " Boundary check on the cursor position to make sure it's inside the text object
 " region. Return 1 if the cursor is within range, 0 otherwise.
-function! s:is_cursor_inside(pos, region)
+function! s:is_cursor_inside(pos, region) abort
   if s:compare_pos(a:pos, a:region.start_pos) < 0
     return 0
   endif
@@ -125,7 +125,7 @@ endfunction
 
 " Remove duplicates from the candidate list. Two candidates are duplicates if
 " they cover the exact same region (same length and same starting position)
-function! s:remove_duplicate(input)
+function! s:remove_duplicate(input) abort
   let i = len(a:input) - 1
   while i >= 1
     if a:input[i].length ==# a:input[i-1].length &&
@@ -141,7 +141,7 @@ endfunction
 " start_pos: The result of getpos() on the starting position of the text object
 " end_pos: The result of getpos() on the ending position of the text object
 " length: The number of characters for the text object
-function! s:get_candidate_dict(text_object)
+function! s:get_candidate_dict(text_object) abort
   " Store the current view so we can restore it at the end
   let winview = winsaveview()
 
@@ -153,10 +153,10 @@ function! s:get_candidate_dict(text_object)
 
   let selection = s:get_visual_selection()
   let ret = {
-        \ "text_object": a:text_object,
-        \ "start_pos": selection.start_pos,
-        \ "end_pos": selection.end_pos,
-        \ "length": selection.length,
+        \ 'text_object': a:text_object,
+        \ 'start_pos': selection.start_pos,
+        \ 'end_pos': selection.end_pos,
+        \ 'length': selection.length,
         \}
 
   " Restore peace
@@ -168,10 +168,10 @@ endfunction
 " Return dictionary of text objects that are to be used for the current
 " filetype. Filetype-specific dictionaries will be loaded if they exist
 " and the global dictionary will be used as a fallback.
-function! s:get_configuration()
+function! s:get_configuration() abort
   let configuration = {}
   for ft in split(&ft, '\.')
-    if exists("g:expand_region_text_objects_".ft)
+    if exists('g:expand_region_text_objects_'.ft)
       call extend(configuration, g:expand_region_text_objects_{ft})
     endif
   endfor
@@ -187,7 +187,7 @@ endfunction
 " text_object: The actual text object string
 " start_pos: The result of getpos() on the starting position of the text object
 " length: The number of characters for the text object
-function! s:get_candidate_list()
+function! s:get_candidate_list() abort
   " Turn off wrap to allow recursive search to work without triggering errors
   let save_wrapscan = &wrapscan
   set nowrapscan
@@ -196,7 +196,7 @@ function! s:get_candidate_list()
 
   " Generate the candidate list for every defined text object
   let candidates = keys(config)
-  call map(candidates, "s:get_candidate_dict(v:val)")
+  call map(candidates, 's:get_candidate_dict(v:val)')
 
   " For the ones that are recursive, generate them until they no longer match
   " any region
@@ -236,7 +236,7 @@ endfunction
 
 " Return a dictionary containing the start position, end position and length of
 " the current visual selection.
-function! s:get_visual_selection()
+function! s:get_visual_selection() abort
   let start_pos = getpos("'<")
   let end_pos = getpos("'>")
   let [lnum1, col1] = start_pos[1:2]
@@ -253,7 +253,7 @@ endfunction
 
 " Figure out whether we should compute the candidate text objects, or we're in
 " the middle of an expand/shrink.
-function! s:should_compute_candidates(mode)
+function! s:should_compute_candidates(mode) abort
   if a:mode ==# 'v'
     " Check that current visual selection is idential to our last expanded
     " region
@@ -270,7 +270,7 @@ endfunction
 
 " Computes the list of text object candidates to be used given the current
 " cursor position.
-function! s:compute_candidates(cursor_pos)
+function! s:compute_candidates(cursor_pos) abort
   " Reset index into the candidates list
   let s:cur_index = -1
 
@@ -281,7 +281,7 @@ function! s:compute_candidates(cursor_pos)
   let s:candidates = s:get_candidate_list()
 
   " Sort them and remove the ones with 0 or 1 length
-  call filter(sort(s:candidates, "s:sort_text_object"), 'v:val.length > 1')
+  call filter(sort(s:candidates, 's:sort_text_object'), 'v:val.length > 1')
 
   " Filter out the ones where the cursor falls outside of its region. i" and i'
   " can start after the cursor position, and ib can start before, so both checks
@@ -294,7 +294,7 @@ endfunction
 
 " Perform the visual selection at the end. If the user wants to be left in
 " select mode, do so
-function! s:select_region()
+function! s:select_region() abort
   exec 'normal! v'
   exec 'normal '.s:candidates[s:cur_index].text_object
   if expand_region#use_select_mode()
@@ -304,11 +304,11 @@ endfunction
 
 " Expand or shrink the visual selection to the next candidate in the text object
 " list.
-function! s:expand_region(mode, direction)
+function! s:expand_region(mode, direction) abort
   " Save the selectmode setting, and remove the setting so our 'v' command do
   " not get interfered
   let s:saved_selectmode = &selectmode
-  let &selectmode=""
+  let &selectmode=''
 
   if s:should_compute_candidates(a:mode)
     call s:compute_candidates(getpos('.'))
@@ -332,7 +332,7 @@ function! s:expand_region(mode, direction)
       " In visual mode, doing nothing here will return us to normal mode. For
       " select mode, the following is needed.
       if expand_region#use_select_mode()
-        exec "normal! gV"
+        exec 'normal! gV'
       endif
     else
       " Restore the window view
