@@ -12,15 +12,6 @@ set cpo&vim
 " ==============================================================================
 " Mappings
 " ==============================================================================
-if !hasmapto('<Plug>(expand_region_expand)')
-  nmap + <Plug>(expand_region_expand)
-  vmap + <Plug>(expand_region_expand)
-endif
-if !hasmapto('<Plug>(expand_region_shrink)')
-  vmap _ <Plug>(expand_region_shrink)
-  nmap _ <Plug>(expand_region_shrink)
-endif
-
 nnoremap <silent> <Plug>(expand_region_expand)
       \ :<C-U>call expand_region#next('n', '+')<CR>
 " Map keys differently depending on which mode is desired
